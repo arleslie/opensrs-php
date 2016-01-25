@@ -1,0 +1,23 @@
+{
+    "name": "arleslie/opensrs-php",
+    "description": "PHP SDK for OpenSRS API",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Andrew Leslie",
+            "email": "arleslie@arleslie.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "~6",
+        "ext-simplexml": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "arleslie\\OpenSRS\\": ["src/", "src/Exceptions/"]
+        }
+    },
+    "config": {
+        "bin-dir": "bin"
+    }
+}
