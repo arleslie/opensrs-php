@@ -90,21 +90,21 @@ trait Helper
 		$attributes = $body->addChild('item');
 		$attributes->addAttribute('key', 'attributes');
 
-		$this->buildAttributes($attributes->addChild('dt_assoc'), $values);
+		$this->buildAttributes(&$attributes->addChild('dt_assoc'), $values);
 
 		return $xml;
 	}
 
-	private function buildAttributes(SimpleXMLElement &$xml, array $values)
+	private function buildAttributes(SimpleXMLElement $xml, array $values)
 	{
 		foreach ($values as $key => $value) {
 			if (is_array($value)) {
 				$child = $xml->addChild('item')->addAttribute('key', $key);
 
 				if ($this->__isArrayAssoc($value)) {
-					$this->buildAttributes($child);
+					$this->buildAttributes(&$child->addChild('dt_assoc'), $value);
 				} else {
-					$this->buildAttributes($child);
+					$this->buildAttributes(&$child->addChild('dt_array'), $value);
 				}
 			} else {
 				$xml->addChild('item', $value)->addAttribute('key', $key);
