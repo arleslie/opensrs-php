@@ -2,7 +2,7 @@
 
 namespace arleslie\OpenSRS;
 
-class AuthenicationException extends \Exception
+class CommandException extends \Exception
 {
 	private $recommendation;
 

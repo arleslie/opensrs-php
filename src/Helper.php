@@ -21,12 +21,20 @@ trait Helper
 	{
 		$xml = $this->castToXML(strtoupper($action), $attributes)->asXML();
 
-		$response = $this->guzzle->request('POST', '/', [
-			'headers' => [
-				'X-Signature' => md5(md5($xml . $this->apikey) . $this->apikey)
-			],
-			'body' => $xml
-		]);
+		try {
+			$response = $this->guzzle->request('POST', '/', [
+				'headers' => [
+					'X-Signature' => md5(md5($xml . $this->apikey) . $this->apikey)
+				],
+				'body' => $xml
+			]);
+		} catch (\Exception $e) {
+			throw new ConnectionException(
+				"Unable to connect to OpenSRS API.",
+				"Please verify your IP is whitelisted in your OpenSRS Account Settings.",
+				$e
+			);
+		}
 
 		return $this->parse($response);
 	}
@@ -37,7 +45,9 @@ trait Helper
 		$hasError = (string) $xml->xpath('//OPS_envelope/body/data_block/dt_assoc/item[@key="is_success"]')[0] === '0';
 
 		if ($hasError) {
-			$object = (string) $xml->xpath('//OPS_envelope/body/data_block/dt_assoc/item[@key="object"]')[0];
+			$object = $xml->xpath('//OPS_envelope/body/data_block/dt_assoc/item[@key="object"]');
+			$object = !empty($object) ? (string) $object[0] : 'AUTHENICATE';
+
 			$errorcode = intval((string) $xml->xpath('//OPS_envelope/body/data_block/dt_assoc/item[@key="response_code"]')[0]);
 			$errormessage = (string) $xml->xpath('//OPS_envelope/body/data_block/dt_assoc/item[@key="response_text"]')[0];
 
@@ -45,10 +55,10 @@ trait Helper
 				case 'AUTHENICATE':
 					switch ($errorcode) {
 						case 400:
-							throw new AuthenicationException('Invalid Username');
+							throw new AuthenicationException('Invalid Username', 'Check that the username has been entered correctly.');
 							break;
 						case 401:
-							throw new AuthenicationException('Invalid API Key');
+							throw new AuthenicationException('Invalid API Key', 'Check that the API Key has been entered correctly.');
 							break;
 						default:
 							throw new \Exception($errormessage);
@@ -58,7 +68,7 @@ trait Helper
 				default:
 					switch ($errorcode) {
 						case 400:
-							throw new CommandException($errormessage);
+							throw new CommandException($errormessage, 'Please report this as a bug.');
 							break;
 						default:
 							throw new \Exception($errormessage);
@@ -90,21 +100,21 @@ trait Helper
 		$attributes = $body->addChild('item');
 		$attributes->addAttribute('key', 'attributes');
 
-		$this->buildAttributes(&$attributes->addChild('dt_assoc'), $values);
+		$this->buildAttributes($attributes->addChild('dt_assoc'), $values);
 
 		return $xml;
 	}
 
-	private function buildAttributes(SimpleXMLElement $xml, array $values)
+	private function &buildAttributes(SimpleXMLElement $xml, array $values)
 	{
 		foreach ($values as $key => $value) {
 			if (is_array($value)) {
 				$child = $xml->addChild('item')->addAttribute('key', $key);
 
 				if ($this->__isArrayAssoc($value)) {
-					$this->buildAttributes(&$child->addChild('dt_assoc'), $value);
+					$this->buildAttributes($child);
 				} else {
-					$this->buildAttributes(&$child->addChild('dt_array'), $value);
+					$this->buildAttributes($child);
 				}
 			} else {
 				$xml->addChild('item', $value)->addAttribute('key', $key);
