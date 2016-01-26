@@ -32,6 +32,7 @@ trait Helper
 			throw new ConnectionException(
 				"Unable to connect to OpenSRS API.",
 				"Please verify your IP is whitelisted in your OpenSRS Account Settings.",
+				0,
 				$e
 			);
 		}
@@ -46,32 +47,32 @@ trait Helper
 
 		if ($hasError) {
 			$object = $xml->xpath('//OPS_envelope/body/data_block/dt_assoc/item[@key="object"]');
-			$object = !empty($object) ? (string) $object[0] : 'AUTHENICATE';
+			$object = !empty($object) ? (string) $object[0] : 'AUTHENTICATE';
 
 			$errorcode = intval((string) $xml->xpath('//OPS_envelope/body/data_block/dt_assoc/item[@key="response_code"]')[0]);
 			$errormessage = (string) $xml->xpath('//OPS_envelope/body/data_block/dt_assoc/item[@key="response_text"]')[0];
 
 			switch ($object) {
-				case 'AUTHENICATE':
+				case 'AUTHENTICATE':
 					switch ($errorcode) {
 						case 400:
-							throw new AuthenicationException('Invalid Username', 'Check that the username has been entered correctly.');
+							throw new AuthenicationException('Invalid Username', 'Check that the username has been entered correctly.', $errorcode);
 							break;
 						case 401:
-							throw new AuthenicationException('Invalid API Key', 'Check that the API Key has been entered correctly.');
+							throw new AuthenicationException('Invalid API Key', 'Check that the API Key has been entered correctly.', $errorcode);
 							break;
 						default:
-							throw new \Exception($errormessage);
+							throw new \Exception($errormessage, $errorcode);
 							break;
 					}
 					break;
 				default:
 					switch ($errorcode) {
 						case 400:
-							throw new CommandException($errormessage, 'Please report this as a bug.');
+							throw new CommandException($errormessage, 'Please report this as a bug.', $errorcode);
 							break;
 						default:
-							throw new \Exception($errormessage);
+							throw new \Exception($errormessage, $errorcode);
 							break;
 					}
 					break;
